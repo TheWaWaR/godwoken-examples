@@ -44,7 +44,7 @@ program
     .description("Deploy a EVM contract")
     .action(deploy)
 program
-    .command("call <to_id> <input_data> <rollup_type_hash> <privkey>")
+    .command("call <to_id> <input_data> <value> <rollup_type_hash> <privkey>")
     .description("Call a EVM contract")
     .action(call)
 program
@@ -118,6 +118,7 @@ async function _call(
     method: Function,
     to_id_str: string,
     input_data: string,
+    value: bigint,
     rollup_type_hash: string,
     privkey: string,
 ) {
@@ -134,7 +135,7 @@ async function _call(
         exit(-1);
     }
     const nonce = await godwoken.getNonce(from_id);
-    const raw_l2tx = polyjuice.generateTransaction(from_id, parseInt(to_id_str), 0n, input_data, nonce);
+    const raw_l2tx = polyjuice.generateTransaction(from_id, parseInt(to_id_str), value, input_data, nonce);
     const message = _generateTransactionMessageToSign(raw_l2tx, rollup_type_hash);
     const signature = _signMessage(message, privkey);
     const l2tx: L2Transaction = { raw: raw_l2tx, signature };
@@ -147,13 +148,14 @@ async function _call(
 async function call(
     to_id_str: string,
     input_data: string,
+    value: string,
     rollup_type_hash: string,
     privkey: string,
 ) {
     const godwoken = new Godwoken(program.rpc);
     _call(
         godwoken.submitL2Transaction.bind(godwoken),
-        to_id_str, input_data, rollup_type_hash, privkey,
+        to_id_str, input_data, BigInt(value), rollup_type_hash, privkey,
     );
 }
 
@@ -166,7 +168,7 @@ async function staticCall(
     const godwoken = new Godwoken(program.rpc);
     _call(
         godwoken.executeL2Transaction.bind(godwoken),
-        to_id_str, input_data, rollup_type_hash, privkey,
+        to_id_str, input_data, 0n, rollup_type_hash, privkey,
     );
 }
 
